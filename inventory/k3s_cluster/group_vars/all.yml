@@ -1,0 +1,6 @@
+---
+k3s_version: v1.22.3+k3s1
+systemd_dir: /etc/systemd/system
+mono_node_ip: "{{ hostvars[groups['mono-node'][0]]['ansible_host'] | default(groups['mono-node'][0]) }}"
+extra_server_args: ""
+extra_agent_args: ""

@@ -1,0 +1,5 @@
+# Ignore les clefs ssh
+*key.pem
+
+# Ignore éléments de tests
+Dockerfile

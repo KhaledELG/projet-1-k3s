@@ -1,0 +1,51 @@
+image: registry.hub.docker.com/cytopia/ansible:latest-tools
+
+stages:
+  - deploy
+  - reset
+
+variables:
+  PUBLIC_IP:
+    description: "PUBLIC_IP"
+    value: ""
+  PRIVATE_KEY:
+    description: "PRIVATE_KEY"
+    value: ""
+  PRIVATE_AWS_ACCESS_KEY_ID:
+    description: "PRIVATE_AWS_ACCESS_KEY_ID"
+    value: ""
+  PRIVATE_AWS_SECRET_ACCESS_KEY:
+    description: "PRIVATE_AWS_SECRET_ACCESS_KEY"
+    value: ""
+  INPUT_RESET_CLUSTER:
+    description: "INPUT_RESET_CLUSTER"
+    value: ""
+  INPUT_DEPLOY_CLUSTER:
+    description: "INPUT_DEPLOY_CLUSTER"
+    value: ""
+
+cache:
+  untracked: true
+
+before_script:
+  - sed -i 's/X.X.X.X/'"${PUBLIC_IP}"'/' inventory/k3s_cluster/hosts.ini
+  - sed -i 's/Y.Y.Y.Y/'"${PRIVATE_AWS_ACCESS_KEY_ID}"'/' inventory/k3s_cluster/hosts.ini
+  - sed -i 's@Z.Z.Z.Z@'"${PRIVATE_AWS_SECRET_ACCESS_KEY}"'@' inventory/k3s_cluster/hosts.ini
+  - mkdir -p /etc/ansible
+  - echo -e "$PRIVATE_KEY" > /etc/ansible/dots_ansible_key.pem
+  - chmod 400 /etc/ansible/dots_ansible_key.pem
+  - mv ansible.cfg /etc/ansible/ansible.cfg
+
+k3s_deploy:
+  stage: deploy
+  rules:
+    - if: $INPUT_DEPLOY_CLUSTER == "yes"
+  script:
+    - ansible-playbook site.yml -i inventory/k3s_cluster/hosts.ini
+
+k3s_reset:
+  stage: reset
+  rules:
+    - if: $INPUT_RESET_CLUSTER == "yes"
+  script:
+    - ansible-playbook reset.yml -i inventory/k3s_cluster/hosts.ini
