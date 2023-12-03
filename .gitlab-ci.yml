@@ -1,4 +1,12 @@
-image: registry.hub.docker.com/cytopia/ansible:latest-tools
+workflow:
+  name: Deploy K3S Cluster
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'web'
+
+default:
+  image:
+    name: "registry.hub.docker.com/cytopia/ansible:latest-tools"
+  retry: 2
 
 stages:
   - deploy
@@ -8,38 +16,29 @@ variables:
   PUBLIC_IP:
     description: "PUBLIC_IP"
     value: ""
-  PRIVATE_KEY:
-    description: "PRIVATE_KEY"
-    value: ""
-  PRIVATE_AWS_ACCESS_KEY_ID:
-    description: "PRIVATE_AWS_ACCESS_KEY_ID"
-    value: ""
-  PRIVATE_AWS_SECRET_ACCESS_KEY:
-    description: "PRIVATE_AWS_SECRET_ACCESS_KEY"
-    value: ""
-  INPUT_RESET_CLUSTER:
-    description: "INPUT_RESET_CLUSTER"
-    value: ""
-  INPUT_DEPLOY_CLUSTER:
-    description: "INPUT_DEPLOY_CLUSTER"
-    value: ""
+  DEPLOY_CLUSTER:
+    description: "DEPLOY_CLUSTER"
+    value: "yes"
+  RESET_CLUSTER:
+    description: "RESET_CLUSTER"
+    value: "no"
 
 cache:
   untracked: true
 
 before_script:
   - sed -i 's/X.X.X.X/'"${PUBLIC_IP}"'/' inventory/k3s_cluster/hosts.ini
-  - sed -i 's/Y.Y.Y.Y/'"${PRIVATE_AWS_ACCESS_KEY_ID}"'/' inventory/k3s_cluster/hosts.ini
-  - sed -i 's@Z.Z.Z.Z@'"${PRIVATE_AWS_SECRET_ACCESS_KEY}"'@' inventory/k3s_cluster/hosts.ini
+  - sed -i 's/Y.Y.Y.Y/'"${AWS_ACCESS_KEY_ID}"'/' inventory/k3s_cluster/hosts.ini
+  - sed -i 's@Z.Z.Z.Z@'"${AWS_SECRET_ACCESS_KEY}"'@' inventory/k3s_cluster/hosts.ini
   - mkdir -p /etc/ansible
-  - echo -e "$PRIVATE_KEY" > /etc/ansible/dots_ansible_key.pem
+  - echo -e "$AWS_EC2_PRIVATE_KEY" > /etc/ansible/dots_ansible_key.pem
   - chmod 400 /etc/ansible/dots_ansible_key.pem
   - mv ansible.cfg /etc/ansible/ansible.cfg
 
 k3s_deploy:
   stage: deploy
   rules:
-    - if: $INPUT_DEPLOY_CLUSTER == "yes"
+    - if: $DEPLOY_CLUSTER == "yes"
   script:
     - ansible-playbook site.yml -i inventory/k3s_cluster/hosts.ini
 
